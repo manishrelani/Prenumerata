@@ -2,6 +2,18 @@
 
 A Flutter application for managing personal subscriptions with animated list transitions and clean architecture.
 
+## 📥 Download
+
+### Release APK
+The latest release APK is available in the `apk/` folder of this repository.
+
+**[Download APK](./apk/app-release.apk)**
+
+**Installation:**
+1. Download the APK file from the apk folder
+2. Enable "Install from unknown sources" in your Android settings
+3. Install the APK on your Android device (Android 5.0+ required)
+
 ## Features
 
 - 📱 **Subscription Management**: Add, update, and delete subscription lists
