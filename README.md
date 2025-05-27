@@ -1,4 +1,4 @@
-# Prenumerata - Subscription Management App
+# Prenumerata 
 
 A Flutter application for managing personal subscriptions with animated list transitions and clean architecture.
 
