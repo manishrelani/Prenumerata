@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:prenumerata/core/extenstion/object_extension.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../../core/util/snack_toast.dart';
@@ -33,25 +34,21 @@ class MySubscriptionView extends StatelessWidget {
           current is MySubscriptionLoading || current is MySubscriptionsLoaded || current is MySubscriptionLoadError,
 
       builder: (context, state) {
+        state.runtimeType.showLog;
+
         if (state is MySubscriptionLoading) {
-          return const Center(
-            child: CustomCirculerProgress(),
-          );
+          return const Center(child: CustomCirculerProgress());
         }
 
         if (state is MySubscriptionsLoaded) {
-          if (state.mySubscriptions.isEmpty) {
-            return _CreateNewListPage(
-              () => showAddBottomsheet(context: context, cubit: cubit),
-            );
+          if (cubit.mySubscriptions.isEmpty) {
+            return _CreateNewListPage(() => showAddBottomsheet(context: context, cubit: cubit));
           }
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(
-                height: 24.0,
-              ),
+              const SizedBox(height: 24.0),
               BlocBuilder<MySubscriptionCubit, MySubscriptionState>(
                 buildWhen: (previous, current) => current is MySubsciptionTabChanged,
                 builder: (context, _) {
@@ -62,12 +59,12 @@ class MySubscriptionView extends StatelessWidget {
                       mainAxisSize: MainAxisSize.min,
                       spacing: 12.0,
                       children: [
-                        for (int i = 0; i < state.mySubscriptions.length; i++)
+                        for (int i = 0; i < cubit.mySubscriptions.length; i++)
                           BtnTab(
-                                isSelected: state.mySubscriptions[i].id == cubit.selectedListId,
-                                title: state.mySubscriptions[i].name,
+                                isSelected: cubit.mySubscriptions[i].id == cubit.selectedListId,
+                                title: cubit.mySubscriptions[i].title,
                                 onTap: () {
-                                  cubit.onChangeTab(state.mySubscriptions[i].id);
+                                  cubit.onChangeTab(cubit.mySubscriptions[i].id);
                                 },
                               )
                               .animate(key: ValueKey(i))
@@ -84,15 +81,12 @@ class MySubscriptionView extends StatelessWidget {
                               backgroundColor: Colors.white10,
                               // onTap: cubit.deleteAllSubscription,
                               child: const Icon(Icons.add),
-                              onTap: () => showAddBottomsheet(
-                                context: context,
-                                cubit: cubit,
-                              ),
+                              onTap: () => showAddBottomsheet(context: context, cubit: cubit),
                             )
                             .animate(key: const ValueKey('add'))
                             .slideX(
-                              duration: Duration(milliseconds: 700 + (state.mySubscriptions.length * 200)),
-                              begin: cubit.isFirstLoad ? (3 + state.mySubscriptions.length).toDouble() : 0,
+                              duration: Duration(milliseconds: 700 + (cubit.mySubscriptions.length * 200)),
+                              begin: cubit.isFirstLoad ? (3 + cubit.mySubscriptions.length).toDouble() : 0,
                               end: 0.0,
                               curve: Curves.ease,
                             ),
@@ -101,59 +95,51 @@ class MySubscriptionView extends StatelessWidget {
                   );
                 },
               ),
-              const SizedBox(
-                height: 40.0,
-              ),
+              const SizedBox(height: 24.0),
               Expanded(
-                child: AnimatedList(
-                  key: cubit.animatedListKey,
-                  initialItemCount: 0,
+                child: ClipRRect(
+                  clipBehavior: Clip.hardEdge,
+                  child: AnimatedList(
+                    key: cubit.animatedListKey,
+                    initialItemCount: 0,
 
-                  padding: const EdgeInsets.all(16.0),
-                  itemBuilder: (context, index, animation) {
-                    final subscription = state.selectedSubscriptions[index];
+                    padding: const EdgeInsets.fromLTRB(16.0, 32.0, 16.0, 100.0),
+                    itemBuilder: (context, index, animation) {
+                      final subscription = cubit.currentSelectedSubscriptions[index];
 
-                    final overlapOffset = index == 0 ? Offset.zero : Offset(0, -60.0 * index);
-
-                    if (subscription == null) {
-                      return Transform.translate(
-                        offset: overlapOffset,
-                        child: SlideTransition(
-                          position: animation.drive(
-                            Tween<Offset>(begin: const Offset(1.0, 0.0), end: Offset.zero),
-                          ),
-
-                          child: AddSubscriptionWidget(
-                            key: const ValueKey(0),
-                            onTap: () => showAddBottomsheet(
-                              context: context,
-                              cubit: cubit,
-                              selectedList: cubit.mySubscriptions.firstWhereOrNull(
-                                (e) => e.id == cubit.selectedListId,
+                      if (subscription == null) {
+                        return Align(
+                          heightFactor: 0.7,
+                          child: SlideTransition(
+                            position: animation.drive(Tween<Offset>(begin: const Offset(1.0, 0.0), end: Offset.zero)),
+                            child: AddSubscriptionWidget(
+                              key: const ValueKey(0),
+                              onTap: () => showAddBottomsheet(
+                                context: context,
+                                cubit: cubit,
+                                selectedList: cubit.mySubscriptions.firstWhereOrNull(
+                                  (e) => e.id == cubit.selectedListId,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      );
-                    }
+                        );
+                      }
 
-                    return Transform.translate(
-                      offset: overlapOffset,
-                      child: SlideTransition(
-                        position: animation.drive(
-                          Tween<Offset>(
-                            begin: const Offset(1.0, 0.0),
-                            end: Offset.zero,
+                      return Align(
+                        heightFactor: 0.7,
+                        child: SlideTransition(
+                          position: animation.drive(Tween<Offset>(begin: const Offset(1.0, 0.0), end: Offset.zero)),
+
+                          child: SubscriptionWidget(
+                            key: ValueKey(subscription.subscriptionId),
+
+                            subscription: subscription,
                           ),
                         ),
-
-                        child: SubscriptionWidget(
-                          key: ValueKey(subscription.subscriptionId),
-                          subscription: subscription,
-                        ),
-                      ),
-                    );
-                  },
+                      );
+                    },
+                  ),
                 ),
               ),
             ],
@@ -173,9 +159,7 @@ class MySubscriptionView extends StatelessWidget {
       isScrollControlled: true,
       context: context,
       useSafeArea: true,
-      constraints: BoxConstraints(
-        maxHeight: MediaQuery.sizeOf(context).height * 0.85,
-      ),
+      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.85),
       transitionAnimationController: AnimationController(
         vsync: Navigator.of(context),
         duration: const Duration(milliseconds: 600),
@@ -206,26 +190,17 @@ class _CreateNewListPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.add_circle_outline,
-            size: 48.0,
-            color: Colors.white,
-          ),
+          const Icon(Icons.add_circle_outline, size: 48.0, color: Colors.white),
           const SizedBox(height: 16.0),
           Text(
             'Create a new subscription list',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white),
           ),
-          const SizedBox(
-            height: 24.0,
-          ),
+          const SizedBox(height: 24.0),
           SizedBox(
             width: MediaQuery.sizeOf(context).width * 0.6,
-            child: BtnPrimary(
-              title: "Create",
-              onPressed: onCreate,
-            ),
+            child: BtnPrimary(title: "Create", onPressed: onCreate),
           ),
         ],
       ),
@@ -244,26 +219,17 @@ class _ErrorPage extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.error_outline,
-            size: 48.0,
-            color: Colors.red,
-          ),
+          const Icon(Icons.error_outline, size: 48.0, color: Colors.red),
           const SizedBox(height: 16.0),
           Text(
             'Unable to load subscriptions',
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.red),
           ),
-          const SizedBox(
-            height: 24.0,
-          ),
+          const SizedBox(height: 24.0),
           SizedBox(
             width: MediaQuery.sizeOf(context).width * 0.6,
-            child: BtnPrimary(
-              title: "Refresh",
-              onPressed: onRefresh,
-            ),
+            child: BtnPrimary(title: "Refresh", onPressed: onRefresh),
           ),
         ],
       ),

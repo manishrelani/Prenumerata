@@ -9,21 +9,15 @@ sealed class MySubscriptionState extends Equatable {
 
 final class MySubscriptionLoading extends MySubscriptionState {}
 
-final class MySubsciptionTabChanged extends MySubscriptionState {}
-
-final class MySubscriptionsLoaded extends MySubscriptionState {
-  final List<IdNameEntity> mySubscriptions;
-
-  final List<SubscriptionEntity?> selectedSubscriptions;
-
-  const MySubscriptionsLoaded({
-    required this.mySubscriptions,
-    required this.selectedSubscriptions,
-  });
+final class MySubsciptionTabChanged extends MySubscriptionState {
+  final int listId;
+  const MySubsciptionTabChanged({required this.listId});
 
   @override
-  List<Object> get props => [mySubscriptions, selectedSubscriptions];
+  List<Object> get props => [listId];
 }
+
+final class MySubscriptionsLoaded extends MySubscriptionState {}
 
 final class MySubscriptionLoadError extends MySubscriptionState {
   final String message;

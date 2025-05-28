@@ -35,25 +35,14 @@ class SubscriptionWidget extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    const SizedBox(
-                      height: 6.0,
-                    ),
+                    const SizedBox(height: 6.0),
                     DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(16)),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8.0,
-                          vertical: 4.0,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
                         child: Text(
                           '\$ ${subscription.price.toStringAsFixed(2)} / month',
-                          style: const TextStyle(
-                            color: Colors.black,
-                            fontSize: 14,
-                          ),
+                          style: const TextStyle(color: Colors.black, fontSize: 14),
                         ),
                       ),
                     ),
@@ -61,14 +50,15 @@ class SubscriptionWidget extends StatelessWidget {
                 ),
               ),
               CircleAvatar(
-                radius: 34,
+                radius: 30.0,
                 backgroundColor: Colors.white,
                 child: CirculerWidget(
-                  radius: 26.0,
+                  radius: 24.0,
                   child: SvgPicture.asset(
                     subscription.logo,
-                    width: 60,
-                    height: 60,
+                    width: 52.0,
+                    height: 52.0,
+                    fit: BoxFit.fill,
                   ),
                 ),
               ),
@@ -97,7 +87,7 @@ class AddSubscriptionWidget extends StatelessWidget {
             borderRadius: BorderRadius.circular(24.0),
           ),
           child: const Padding(
-            padding: EdgeInsets.all(16.0),
+            padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -106,16 +96,12 @@ class AddSubscriptionWidget extends StatelessWidget {
                     padding: EdgeInsets.only(top: 16.0),
                     child: Text(
                       'Add a subscription',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.bold),
                     ),
                   ),
                 ),
                 DottedCircleWidget(
-                  radius: 34.0,
+                  radius: 30.0,
                   child: Icon(
                     Icons.add,
                     color: Colors.white,

@@ -20,7 +20,12 @@ class OnboardingScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             //
-            const Expanded(flex: 5, child: AnimatedStackedLogoWidget())
+            const Expanded(
+                  flex: 5,
+                  child: RepaintBoundary(
+                    child: AnimatedStackedLogoWidget(),
+                  ),
+                )
                 .animate()
                 .scale(
                   duration: 1000.ms,

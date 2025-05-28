@@ -4,7 +4,6 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../../core/extenstion/object_extension.dart';
 import '../../../../../core/util/snack_toast.dart';
-import '../../../../../domain/entities/id_name_entity.dart';
 import '../../../../../domain/entities/my_subscription_enitity.dart';
 import '../../../../../domain/entities/subscription_enitity.dart';
 import '../../../../../domain/exceptions/subscription_exceptions.dart';
@@ -39,6 +38,9 @@ class MySubscriptionCubit extends Cubit<MySubscriptionState> {
   List<SubscriptionEntity> _allSubscriptionList = [];
   List<SubscriptionEntity> get allSubscriptions => _allSubscriptionList;
 
+  List<SubscriptionEntity?> _currentSelectedSubscriptions = [];
+  List<SubscriptionEntity?> get currentSelectedSubscriptions => _currentSelectedSubscriptions;
+
   void onRefresh() {
     emit(MySubscriptionLoading());
     _getMySubscription();
@@ -53,7 +55,7 @@ class MySubscriptionCubit extends Cubit<MySubscriptionState> {
       _mySubscriptions = _subscriptionRepository.getMySubscriptions();
       _loadListfirstTime();
     } on SubscriptionNotFound catch (_) {
-      emit(const MySubscriptionsLoaded(mySubscriptions: [], selectedSubscriptions: []));
+      emit(MySubscriptionsLoaded());
     } catch (e, s) {
       e.showLog;
       s.showLog;
@@ -65,18 +67,17 @@ class MySubscriptionCubit extends Cubit<MySubscriptionState> {
   void _loadListfirstTime() {
     _isFirstLoad = true;
     _selectedListId = _mySubscriptions.first.id;
-    final headerList = _mySubscriptions.map((e) => IdNameEntity(id: e.id, name: e.title)).toList();
-    final list = [null, ..._mySubscriptions.first.subscriptions];
-    emit(MySubscriptionsLoaded(mySubscriptions: headerList, selectedSubscriptions: list));
+
+    // null is for add new subscription tile
+    _currentSelectedSubscriptions = [null, ..._mySubscriptions.first.subscriptions];
+    emit(MySubscriptionsLoaded());
 
     // animate after the fram initialized
     // so we will get the animatedListKey current state
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _isFirstLoad = false;
-
-      // null is for add new subscription tile
-      _animateList(const [], [null, ..._mySubscriptions.first.subscriptions]);
+      _addItemInAnimatedList(indexToAdd: 0, totalItemsToAdd: _currentSelectedSubscriptions.length);
     });
   }
 
@@ -85,19 +86,11 @@ class MySubscriptionCubit extends Cubit<MySubscriptionState> {
       return;
     }
 
-    final previousList = _mySubscriptions.firstWhere((e) => e.id == _selectedListId).subscriptions;
-    final currentList = _mySubscriptions.firstWhere((e) => e.id == listId).subscriptions;
-
     _selectedListId = listId;
-    emit(MySubsciptionTabChanged());
+    emit(MySubsciptionTabChanged(listId: listId));
 
-    // null is for add new subscription tile
-    final updatedCurrentList = await _animateList([null, ...previousList], [null, ...currentList]);
-
-    // Update the state with the new selected list and subscriptions
-    final headerList = _mySubscriptions.map((e) => IdNameEntity(id: e.id, name: e.title)).toList();
-
-    emit(MySubscriptionsLoaded(mySubscriptions: headerList, selectedSubscriptions: updatedCurrentList));
+    final newList = [null, ..._mySubscriptions.firstWhere((e) => e.id == listId).subscriptions];
+    _updateTheSubscriptionList(_currentSelectedSubscriptions, newList);
   }
 
   void onSaveUpdateSubscription(MySubscriptionListEnitity subscription) {
@@ -110,19 +103,18 @@ class MySubscriptionCubit extends Cubit<MySubscriptionState> {
 
   void _updateSelectedList(MySubscriptionListEnitity subscription) async {
     try {
-      final previousList = _mySubscriptions.firstWhere((e) => e.id == _selectedListId).subscriptions;
+      if (_mySubscriptions.any((e) => e.id != subscription.id && e.title == subscription.title)) {
+        SnackToast.show(message: 'Subscription with this name already exists');
+        return;
+      }
 
       final updatedSubscription = _subscriptionRepository.addUpdateMySubscription(subscription);
       final index = _mySubscriptions.indexWhere((e) => e.id == updatedSubscription.id);
       _mySubscriptions[index] = updatedSubscription;
 
-      final currentList = _mySubscriptions.firstWhere((e) => e.id == _selectedListId).subscriptions;
+      final newList = [null, ..._mySubscriptions[index].subscriptions];
 
-      final updatedCurrentList = await _animateList([null, ...previousList], [null, ...currentList]);
-
-      final headerList = _mySubscriptions.map((e) => IdNameEntity(id: e.id, name: e.title)).toList();
-
-      emit(MySubscriptionsLoaded(mySubscriptions: headerList, selectedSubscriptions: updatedCurrentList));
+      _updateTheSubscriptionList(_currentSelectedSubscriptions, newList);
     } on SubscriptionModificationFailed catch (e) {
       SnackToast.show(message: e.message);
     } catch (e, s) {
@@ -134,13 +126,21 @@ class MySubscriptionCubit extends Cubit<MySubscriptionState> {
 
   void _onSaveMySubscription(MySubscriptionListEnitity subscription) {
     try {
+      if (_mySubscriptions.any((e) => e.title == subscription.title)) {
+        SnackToast.show(message: 'Subscription with this name already exists');
+        return;
+      }
+
+      final updatedSubscriptionList = _subscriptionRepository.addUpdateMySubscription(subscription);
+      _mySubscriptions.add(updatedSubscriptionList);
+
+      // If this is the first subscription, we nee to load it as first time
       final isEmptySubscription = _mySubscriptions.isEmpty;
-      final updatedSubscription = _subscriptionRepository.addUpdateMySubscription(subscription);
-      _mySubscriptions.add(updatedSubscription);
+
       if (isEmptySubscription) {
         _loadListfirstTime();
       } else {
-        onChangeTab(updatedSubscription.id);
+        onChangeTab(updatedSubscriptionList.id);
       }
     } on SubscriptionModificationFailed catch (e) {
       SnackToast.show(message: e.message);
@@ -151,34 +151,52 @@ class MySubscriptionCubit extends Cubit<MySubscriptionState> {
     }
   }
 
-  void deleteAllSubscription() {
-    try {
-      _subscriptionRepository.deleteallMySubscriptions();
-      _mySubscriptions.clear();
-      _selectedListId = 0;
-      _animateList(
-        [null, ..._mySubscriptions.first.subscriptions],
-        const [],
-      );
-      emit(const MySubscriptionsLoaded(mySubscriptions: [], selectedSubscriptions: []));
-    } on SubscriptionModificationFailed catch (e) {
-      SnackToast.show(message: e.message);
-    } catch (e, s) {
-      e.showLog;
-      s.showLog;
-      SnackToast.show(message: 'Failed to delete subscription');
+  // void deleteAllSubscription() {
+  //   try {
+  //     _subscriptionRepository.deleteallMySubscriptions();
+  //     _mySubscriptions.clear();
+  //     _selectedListId = 0;
+  //     _animateList(
+  //       [null, ..._mySubscriptions.first.subscriptions],
+  //       const [],
+  //     );
+  //     emit(const MySubscriptionsLoaded(mySubscriptions: [], selectedSubscriptions: []));
+  //   } on SubscriptionModificationFailed catch (e) {
+  //     SnackToast.show(message: e.message);
+  //   } catch (e, s) {
+  //     e.showLog;
+  //     s.showLog;
+  //     SnackToast.show(message: 'Failed to delete subscription');
+  //   }
+  // }
+
+  Future<void> _updateTheSubscriptionList(
+    List<SubscriptionEntity?> previousList,
+    List<SubscriptionEntity?> newList,
+  ) async {
+    final commonItems = await _removeAndGetCommonItemsFromAnimatedList(previousList, newList);
+
+    // Find items that are in currentList but not in previousList
+    final itemsToAdd = newList.where((item) => !commonItems.contains(item)).toList();
+
+    final updatedNewList = [...commonItems, ...itemsToAdd];
+
+    if (itemsToAdd.isNotEmpty) {
+      _addItemInAnimatedList(indexToAdd: commonItems.length, totalItemsToAdd: itemsToAdd.length);
     }
+
+    _currentSelectedSubscriptions = updatedNewList;
   }
 
-  /// Animates the transition between two subscription lists
-  /// Handles removal of old items and addition of new items an returns the updated list
-  Future<List<SubscriptionEntity?>> _animateList(
+  Future<List<SubscriptionEntity?>> _removeAndGetCommonItemsFromAnimatedList(
     List<SubscriptionEntity?> previousList,
     List<SubscriptionEntity?> currentList,
   ) async {
-    final addedItems = <SubscriptionEntity?>[];
-    final removableItems = <SubscriptionEntity?>[];
-    final commonItems = <SubscriptionEntity?>[];
+    // Find items that are in previousList but not in currentList
+    // and common items that are in both lists, which will remain in the list
+
+    List<SubscriptionEntity?> itemsToRemove = [];
+    List<SubscriptionEntity?> commonItems = [];
 
     for (final item in {...previousList, ...currentList}) {
       final inPrevious = previousList.contains(item);
@@ -187,15 +205,13 @@ class MySubscriptionCubit extends Cubit<MySubscriptionState> {
       if (inPrevious && inCurrent) {
         commonItems.add(item);
       } else if (inPrevious && !inCurrent) {
-        removableItems.add(item);
-      } else if (!inPrevious && inCurrent) {
-        addedItems.add(item);
+        itemsToRemove.add(item);
       }
     }
 
     // Remove items first (remove from end to start to avoid index shifting)
     final sortedRemovalIndices = <int>[];
-    for (final item in removableItems) {
+    for (final item in itemsToRemove) {
       final index = previousList.indexOf(item);
       if (index != -1) {
         sortedRemovalIndices.add(index);
@@ -214,38 +230,27 @@ class MySubscriptionCubit extends Cubit<MySubscriptionState> {
         duration: Duration(milliseconds: 300 + (i * 100)),
       );
     }
+    _currentSelectedSubscriptions = commonItems;
 
     // Wait for all removal animations to complete
     await Future.delayed(Duration(milliseconds: 300 + (sortedRemovalIndices.length * 100)));
 
-    for (int i = 0; i < addedItems.length; i++) {
-      final indexToAdd = currentList.length - addedItems.length + i;
-      animatedListKey.currentState!.insertItem(
-        indexToAdd,
-        duration: Duration(milliseconds: 300 + (i * 50)),
-      );
-    }
-    final updatedCurrentList = [...commonItems, ...addedItems];
+    return commonItems;
+  }
 
-    return updatedCurrentList;
+  void _addItemInAnimatedList({required int indexToAdd, required int totalItemsToAdd}) {
+    for (int i = 0; i < totalItemsToAdd; i++) {
+      animatedListKey.currentState!.insertItem(indexToAdd + i, duration: Duration(milliseconds: 300 + (i * 50)));
+    }
   }
 
   Widget _buildRemovalItem(int index, Animation<double> animation, SubscriptionEntity? item) {
-    return Transform.translate(
-      offset: Offset(0, -60.0 * index),
+    return Align(
+      heightFactor: 0.7,
       child: SlideTransition(
-        position: animation.drive(
-          Tween<Offset>(
-            begin: const Offset(-1.0, 0.0),
-            end: Offset.zero,
-          ),
-        ),
-        child: item == null
-            ? const AddSubscriptionWidget()
-            : SubscriptionWidget(
-                subscription: item,
-                key: ValueKey(item.subscriptionId),
-              ),
+        key: ValueKey(item?.subscriptionId ?? 0),
+        position: animation.drive(Tween<Offset>(begin: const Offset(-1.0, 0.0), end: Offset.zero)),
+        child: item == null ? const AddSubscriptionWidget() : SubscriptionWidget(subscription: item),
       ),
     );
   }

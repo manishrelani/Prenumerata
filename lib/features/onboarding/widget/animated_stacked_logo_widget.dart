@@ -169,21 +169,21 @@ class _AnimatedStackedLogoWidgetState extends State<AnimatedStackedLogoWidget> w
             ),
           ),
 
-          // Row(
-          //   mainAxisAlignment: MainAxisAlignment.center,
-          //   children: [
-          //     ElevatedButton(
-          //       onPressed: _slideLeft,
-          //       child: const Text(' ← Slide Left'),
-          //     ),
-          //     const SizedBox(width: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              ElevatedButton(
+                onPressed: _slideLeft,
+                child: const Text(' ← Slide Left'),
+              ),
+              const SizedBox(width: 20),
 
-          //     ElevatedButton(
-          //       onPressed: _slideRight,
-          //       child: const Text('Slide Right →'),
-          //     ),
-          //   ],
-          // ),
+              ElevatedButton(
+                onPressed: _slideRight,
+                child: const Text('Slide Right →'),
+              ),
+            ],
+          ),
         ],
       ),
     );

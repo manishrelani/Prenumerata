@@ -118,7 +118,7 @@ const List<SubscriptionEntity> _allSubscriptions = [
     subscriptionId: 6,
     name: 'Amazon Prime',
     logo: Assets.svgsLogosPrime,
-    backgroundColor: 'FF1b98fd',
+    backgroundColor: 'FF4d94ff',
     contentColor: 'FFFFFFFF',
 
     price: 14.99,
