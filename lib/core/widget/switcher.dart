@@ -61,8 +61,9 @@ class _SlideSwitcherState extends State<SlideSwitcher> with SingleTickerProvider
           List<double> tabWidths = List.generate(widget.items.length, (index) {
             final item = widget.items[index];
             final isSelected = index == _selectedIndex;
-            double iconWidth = 22.0;
+            final iconWidth = 22.0;
             double textWidth = 0.0;
+
             if (isSelected && item.title.isNotEmpty) {
               final textPainter = TextPainter(
                 text: TextSpan(
@@ -81,7 +82,6 @@ class _SlideSwitcherState extends State<SlideSwitcher> with SingleTickerProvider
             return iconWidth + textWidth + 20.0;
           });
 
-          // Calculate left offset for the slider
           double sliderLeft = 0;
           for (int i = 0; i < _selectedIndex; i++) {
             sliderLeft += tabWidths[i];
@@ -104,7 +104,6 @@ class _SlideSwitcherState extends State<SlideSwitcher> with SingleTickerProvider
                 ),
               ),
 
-              // Items row to establish the layout
               Row(
                 mainAxisSize: MainAxisSize.min,
                 children: widget.items.asMap().entries.map((entry) {
@@ -161,8 +160,6 @@ class _SlideSwitcherState extends State<SlideSwitcher> with SingleTickerProvider
                   );
                 }).toList(),
               ),
-
-              // Sliding background indicator - positioned absolutely
             ],
           );
         },
