@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:async';
 import 'dart:ui';
 
@@ -10,12 +9,12 @@ import '../../../generated/assets.gen.dart';
 
 class LogoMetadata {
   final String title;
-  final String imageUrl;
+  final String image;
   final Color color;
 
   const LogoMetadata({
     required this.title,
-    required this.imageUrl,
+    required this.image,
     required this.color,
   });
 }
@@ -41,27 +40,27 @@ class _AnimatedStackedLogoWidgetState extends State<AnimatedStackedLogoWidget> w
   List<LogoMetadata> widgets = [
     const LogoMetadata(
       title: 'Netflix',
-      imageUrl: Assets.svgsLogosNetflix,
+      image: Assets.svgsLogosNetflix,
       color: Colors.red,
     ),
     const LogoMetadata(
       title: 'Spotify',
-      imageUrl: Assets.svgsLogosSpotify,
+      image: Assets.svgsLogosSpotify,
       color: Colors.green,
     ),
     const LogoMetadata(
       title: 'Youtube',
-      imageUrl: Assets.svgsLogosYoutube,
+      image: Assets.svgsLogosYoutube,
       color: Colors.redAccent,
     ),
     const LogoMetadata(
       title: 'Figma',
-      imageUrl: Assets.svgsLogosFigma,
+      image: Assets.svgsLogosFigma,
       color: Colors.purple,
     ),
     const LogoMetadata(
       title: 'Discord',
-      imageUrl: Assets.svgsLogosDiscord,
+      image: Assets.svgsLogosDiscord,
       color: Colors.blue,
     ),
   ];
@@ -116,7 +115,6 @@ class _AnimatedStackedLogoWidgetState extends State<AnimatedStackedLogoWidget> w
       isAnimating = false;
       _animationController.reset();
     });
-    _animationController.reset();
   }
 
   void initFirstAnimation() {
@@ -158,7 +156,7 @@ class _AnimatedStackedLogoWidgetState extends State<AnimatedStackedLogoWidget> w
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           SizedBox(
-            height: size.height * 0.2,
+            height: MediaQuery.sizeOf(context).height * 0.2,
             width: totalWidth,
             child: Stack(
               alignment: Alignment.center,
@@ -169,21 +167,21 @@ class _AnimatedStackedLogoWidgetState extends State<AnimatedStackedLogoWidget> w
             ),
           ),
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton(
-                onPressed: _slideLeft,
-                child: const Text(' ← Slide Left'),
-              ),
-              const SizedBox(width: 20),
+          // Row(
+          //   mainAxisAlignment: MainAxisAlignment.center,
+          //   children: [
+          //     ElevatedButton(
+          //       onPressed: _slideLeft,
+          //       child: const Text(' ← Slide Left'),
+          //     ),
+          //     const SizedBox(width: 20),
 
-              ElevatedButton(
-                onPressed: _slideRight,
-                child: const Text('Slide Right →'),
-              ),
-            ],
-          ),
+          //     ElevatedButton(
+          //       onPressed: _slideRight,
+          //       child: const Text('Slide Right →'),
+          //     ),
+          //   ],
+          // ),
         ],
       ),
     );
@@ -193,12 +191,20 @@ class _AnimatedStackedLogoWidgetState extends State<AnimatedStackedLogoWidget> w
     final Color beginColor = widgets[2].color;
     final Color endColor = isLeftSwipe ? widgets[3].color : widgets[1].color;
 
+    final colorRadius = MediaQuery.sizeOf(context).width * 0.4;
+
     return AnimatedBuilder(
       animation: _slideAnimation,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 50.0, sigmaY: 40.0),
+        child: SizedBox(
+          height: colorRadius,
+          width: colorRadius,
+        ),
+      ),
       builder: (context, child) {
         final t = isAnimating && isInitialized ? _slideAnimation.value : 0.0;
 
-        // Animate between gradients
         final Color centerColor = Color.lerp(beginColor, endColor, t)!;
 
         return DecoratedBox(
@@ -214,13 +220,7 @@ class _AnimatedStackedLogoWidgetState extends State<AnimatedStackedLogoWidget> w
               stops: const [0.1, 0.4],
             ),
           ),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 50.0, sigmaY: 40.0),
-            child: SizedBox(
-              height: MediaQuery.sizeOf(context).width * 0.4,
-              width: MediaQuery.sizeOf(context).width * 0.4,
-            ),
-          ),
+          child: child,
         );
       },
     );
@@ -238,14 +238,19 @@ class _AnimatedStackedLogoWidgetState extends State<AnimatedStackedLogoWidget> w
       final baseLeft = isInitialized ? index * basewidth : centerLeft;
       final baseScale = isInitialized ? _getScale(index) : _getScale(2);
 
-      Widget widget = AnimatedBuilder(
+      final widget = AnimatedBuilder(
+        key: ValueKey(widgets[index].title),
         animation: _slideAnimation,
+        child: _LogoWidget(
+          size: basewidth,
+          image: widgets[index].image,
+        ),
         builder: (context, child) {
           double left = baseLeft;
           double scale = baseScale;
           if (isAnimating) {
             if (isInitialized) {
-              int targetIndex = isLeftSwipe ? (index == 0 ? 4 : index - 1) : (index == 4 ? 0 : index + 1);
+              final targetIndex = isLeftSwipe ? (index == 0 ? 4 : index - 1) : (index == 4 ? 0 : index + 1);
               left = baseLeft + _slideAnimation.value * ((targetIndex - index) * basewidth);
               final targetScale = _getScale(targetIndex);
               scale = baseScale + _slideAnimation.value * (targetScale - baseScale);
@@ -260,29 +265,7 @@ class _AnimatedStackedLogoWidgetState extends State<AnimatedStackedLogoWidget> w
 
           return Positioned(
             left: left,
-            child: Transform.scale(
-              scale: scale,
-              child: Container(
-                width: basewidth,
-                height: basewidth,
-                padding: const EdgeInsets.all(12.0),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 20.0,
-                      spreadRadius: 30.0,
-                    ),
-                  ],
-                ),
-                child: SvgPicture.asset(
-                  widgets[index].imageUrl,
-                  fit: BoxFit.fill,
-                ),
-              ),
-            ),
+            child: Transform.scale(scale: scale, child: child),
           );
         },
       );
@@ -323,5 +306,33 @@ class _AnimatedStackedLogoWidgetState extends State<AnimatedStackedLogoWidget> w
       default:
         return 1;
     }
+  }
+}
+
+class _LogoWidget extends StatelessWidget {
+  final double size;
+
+  final String image;
+  const _LogoWidget({required this.size, required this.image});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      padding: const EdgeInsets.all(12.0),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        shape: BoxShape.circle,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 20.0,
+            spreadRadius: 30.0,
+          ),
+        ],
+      ),
+      child: SvgPicture.asset(image, fit: BoxFit.fill),
+    );
   }
 }
